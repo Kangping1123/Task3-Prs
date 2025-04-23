@@ -1,0 +1,82 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+
+// 定义ChatClient类表示客户端
+class ChatClient {
+public:
+    std::string name;
+    std::string id;
+    std::vector<std::string> messageList;
+
+    ChatClient(const std::string& n, const std::string& i) : name(n), id(i) {}
+
+    // 连接服务器方法
+    void connectToServer(std::unordered_map<std::string, ChatClient*>& serverClients) {
+        serverClients[name] = this;
+        std::cout << name << " 连接到聊天室" << std::endl;
+    }
+
+    // 发送消息方法
+    void sendMessage(const std::string& targetName, const std::string& message,
+        std::unordered_map<std::string, ChatClient*>& serverClients) {
+        if (serverClients.find(targetName) != serverClients.end()) {
+            std::cout << "[" << name << "]发送给[" << targetName << "]: " << message << std::endl;
+            serverClients[targetName]->receiveMessage(message);
+        }
+        else {
+            std::cout << "服务器: 目标客户端不存在" << std::endl;
+        }
+    }
+
+    // 接收消息方法
+    void receiveMessage(const std::string& message) {
+        messageList.push_back(message);
+        std::cout << "[" << name << "]收到消息: [" << message << "]" << std::endl;
+    }
+};
+
+// 定义ChatServer类表示服务器
+class ChatServer {
+public:
+    std::unordered_map<std::string, ChatClient*> clients;
+
+    // 注册客户端方法
+    void registerClient(ChatClient* client) {
+        clients[client->name] = client;
+    }
+
+    // 接收并转发消息方法
+    void sendMessage(const std::string& senderName, const std::string& targetName, const std::string& message) {
+        if (clients.find(targetName) != clients.end()) {
+            std::cout << "服务器向 [" << targetName << "] 发送成功" << std::endl;
+            clients[targetName]->receiveMessage(message);
+        }
+        else {
+            std::cout << "服务器: 目标客户端不存在" << std::endl;
+        }
+    }
+};
+int main() {
+    ChatServer server;
+    ChatClient alice("Alice", "1");
+    ChatClient bob("Bob", "2");
+    ChatClient charlie("Charlie", "3");
+
+    // 客户端连接服务器
+    alice.connectToServer(server.clients);
+    bob.connectToServer(server.clients);
+    charlie.connectToServer(server.clients);
+
+    // Alice 发送消息给 Bob
+    alice.sendMessage("Bob", "你好, Bob!", server.clients);
+
+    // Charlie 发送消息给 Alice
+    charlie.sendMessage("Alice", "你好, Alice!", server.clients);
+
+    // Bob 发送消息给 Tom（不存在的客户端）
+    bob.sendMessage("Tom", "你好, Tom!", server.clients);
+
+    return 0;
+}
